@@ -1,11 +1,12 @@
-# Logger for Aliyun SLS
+## ali-sls
 
-[![Travis CI Build Status](https://img.shields.io/travis/innopals/node-sls-logger/master.svg)](http://travis-ci.org/innopals/node-sls-logger)
-[![NPM Version](https://img.shields.io/npm/v/sls-logger.svg)](https://npmjs.org/package/sls-logger)
-[![NPM Downloads](https://img.shields.io/npm/dm/sls-logger.svg)](https://npmjs.org/package/sls-logger)
-[![Dependency Status](https://david-dm.org/innopals/node-sls-logger.svg)](https://david-dm.org/innopals/node-sls-logger)
+The nodejs logger for aliyun SLS with minimum dependencies, forked from [node-sls-logger](https://github.com/innopals/node-sls-logger).
 
-The nodejs logger for aliyun SLS with minimum dependencies.
+## Installation
+
+```sh
+$ npm i ali-sls --save
+```
 
 ## Configuration
 
@@ -20,7 +21,7 @@ The nodejs logger for aliyun SLS with minimum dependencies.
 | hashkey      |         | string          | false    |                                                              |
 | compress     | false   | boolean         | false    | Use lz4 to compress log payload                              |
 | tags         |         | key-value pair  | false    | Extra tags for your logs                                     |
-| level        | INFO    | string / number | false    | Log level                                                    |
+| level        | ALL    | string / number | false    | Log level                                                    |
 | disabled     | false   | boolean         | false    | Disable sls and log to stdout                                |
 
 Note: if your configuration is incorrect(fail to get logstore), all logs will be written to stdout.
@@ -28,7 +29,8 @@ Note: if your configuration is incorrect(fail to get logstore), all logs will be
 ## Usage
 
 ```javascript
-const logger = new SlsLogger({
+const SlsLogger = require('ali-sls')
+const slsLogger = new SlsLogger({
   endpoint: "example.cn-hangzhou.log.aliyuncs.com",
   accessKey: "your_access_key",
   accessSecret: "your_access_secret",
@@ -37,13 +39,14 @@ const logger = new SlsLogger({
   topic: "test",
   compress: true,
   level: "INFO",
-  disabled: true,
-});
+  disabled: false,
+})
 
-logger.info(
+slsLogger.info("Hello world!")
+slsLogger.log(
   "Hello world!",
   new Date(),
-  function () { "abc"; },
+  function () { "abc" },
   { a: 1, b: { c: 1 }, d: "123", e: false },
   new Object(),
   [1, 2, 3, "abc", false, null, undefined, new Error("error1")],
@@ -51,22 +54,7 @@ logger.info(
   1234,
   true,
   null,
-  undefined,
-  new Error("error2")
-);
+  undefined
+)
+slsLogger.error(new Error("error2"))
 ```
-
-And you can pass a function as log message generator to improve performance; it will not be called unless the log level is enabled.
-
-``` js
-logger.debug(
-  () => "Debug message from generator.",
-  SlsLogger.createField("module", "debug")
-);
-// Set log level on the fly, e.g. through user signal or rest api.
-logger.setLevel("DEBUG");
-```
-
-## Contributing
-
-This project welcomes contributions from the community. Contributions are accepted using GitHub pull requests. If you're not familiar with making GitHub pull requests, please refer to the [GitHub documentation "Creating a pull request"](https://help.github.com/articles/creating-a-pull-request/).

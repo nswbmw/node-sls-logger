@@ -10,9 +10,11 @@ export const LEVEL_WARN = 30000;
 export const LEVEL_INFO = 20000;
 export const LEVEL_DEBUG = 10000;
 export const LEVEL_TRACE = 5000;
+export const LEVEL_LOG = 1000;
 export const LEVEL_ALL = 0;
 export const LEVEL_LOOKUP: { [key: string]: number } = {
   ALL: LEVEL_ALL,
+  LOG: LEVEL_LOG,
   TRACE: LEVEL_TRACE,
   DEBUG: LEVEL_DEBUG,
   INFO: LEVEL_INFO,
@@ -26,24 +28,25 @@ class SlsLogger {
   public static createField(key: string, value: string) {
     return new SlsField(key, value);
   }
-  public log: LogMethod;
+  public log: LeveledLogMethod;
   public trace: LeveledLogMethod;
   public debug: LeveledLogMethod;
   public info: LeveledLogMethod;
   public warn: LeveledLogMethod;
   public error: LeveledLogMethod;
   public fatal: LeveledLogMethod;
+  private _log: LogMethod;
   private producer: SlsProducer;
   private level: number;
   private queue: Array<{ [key: string]: string }> = [];
   private producerState: "PENDING" | "READY" | "UNAVAILABLE" = "PENDING";
   constructor(opts: SlsLoggerOptions) {
     if (typeof opts.level === "string") {
-      this.level = LEVEL_LOOKUP[opts.level.toUpperCase()] || LEVEL_INFO;
+      this.level = LEVEL_LOOKUP[opts.level.toUpperCase()] || LEVEL_ALL;
     } else if (typeof opts.level === "number") {
       this.level = opts.level;
     } else {
-      this.level = LEVEL_INFO;
+      this.level = LEVEL_ALL;
     }
     if (opts.disabled) {
       this.producerState = "UNAVAILABLE";
@@ -79,40 +82,41 @@ class SlsLogger {
         this.queue = [];
       });
     }
-    this.log = (level, message, ...extra) => {
+    this._log = (level, ...extra) => {
       if (typeof level === "string") {
         level = {
-          level: LEVEL_LOOKUP[level.toUpperCase()] || LEVEL_INFO,
+          level: LEVEL_LOOKUP[level.toUpperCase()] || LEVEL_ALL,
           name: level,
         };
       }
       if (level.level < this.level) { return; }
       const data: { [key: string]: string } = {};
-      let logMessage = String(typeof message === "function" ? message() : message);
+      let logMessage = "";
       for (const item of extra) {
         if (item instanceof SlsField) {
           data[item.key] = item.value;
         } else {
-          logMessage += " " + obj2str(item);
+          logMessage += (obj2str(item) + "\n");
         }
       }
       data.level = level.name;
-      data.message = logMessage;
+      data.message = logMessage.trim();
       this.raw(data);
     };
-    this.trace = this.log.bind(this, "TRACE");
-    this.debug = this.log.bind(this, "DEBUG");
-    this.info = this.log.bind(this, "INFO");
-    this.warn = this.log.bind(this, "WARN");
-    this.error = this.log.bind(this, "ERROR");
-    this.fatal = this.log.bind(this, "FATAL");
+    this.log = this._log.bind(this, "LOG");
+    this.trace = this._log.bind(this, "TRACE");
+    this.debug = this._log.bind(this, "DEBUG");
+    this.info = this._log.bind(this, "INFO");
+    this.warn = this._log.bind(this, "WARN");
+    this.error = this._log.bind(this, "ERROR");
+    this.fatal = this._log.bind(this, "FATAL");
   }
   public raw(data: { [key: string]: string }) {
     this.queue.push(data);
   }
   public setLevel(level: string | number) {
     if (typeof level === "string") {
-      this.level = LEVEL_LOOKUP[level.toUpperCase()] || LEVEL_INFO;
+      this.level = LEVEL_LOOKUP[level.toUpperCase()] || LEVEL_ALL;
     } else if (typeof level === "number") {
       this.level = level;
     }
@@ -128,5 +132,5 @@ class SlsLogger {
 }
 
 export default SlsLogger;
-export { SlsField, SlsProducer, LeveledLogMethod, LogMethod, SlsLoggerOptions, SlsOptions };
+export { SlsField, SlsProducer, LeveledLogMethod, SlsLoggerOptions, SlsOptions };
 module.exports = Object.assign(SlsLogger, module.exports);

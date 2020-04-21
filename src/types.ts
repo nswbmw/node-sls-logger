@@ -38,5 +38,5 @@ export interface LogGroup {
   LogTags?: LogTag[];
 }
 
-export type LogMethod = (level: string | { name: string, level: number }, message: string | (() => string), ...extra: any[]) => any;
-export type LeveledLogMethod = (message: string | (() => string), ...extra: any[]) => any;
+export type LogMethod = (level: string | { name: string, level: number }, ...extra: any[]) => any;
+export type LeveledLogMethod = (...extra: any[]) => any;
